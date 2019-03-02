@@ -16,7 +16,7 @@ use flate2::write::{GzEncoder, ZlibEncoder};
 use flate2::Compression;
 use futures::{Async, Poll};
 use http::header::{
-    HeaderValue, CONNECTION, CONTENT_ENCODING, CONTENT_LENGTH, DATE, TRANSFER_ENCODING,
+    self, HeaderValue, CONNECTION, CONTENT_ENCODING, CONTENT_LENGTH, DATE, TRANSFER_ENCODING,
 };
 use http::{HttpTryFrom, Version};
 use time::{self, Duration};
@@ -223,7 +223,8 @@ fn content_encoder(buf: BytesMut, req: &mut ClientRequest) -> Output {
 
     let transfer = match body {
         Body::Empty => {
-            req.headers_mut().remove(CONTENT_LENGTH);
+            //Insert zero content-length only if user hasn't added it.
+            req.headers_mut().entry(CONTENT_LENGTH).expect("CONTENT_LENGTH to be valid header name").or_insert(0);
             return Output::Empty(buf);
         }
         Body::Binary(ref mut bytes) => {
